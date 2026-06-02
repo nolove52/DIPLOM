@@ -1,0 +1,18 @@
+Команды для App Platform
+
+Build command:
+npm run build
+
+Start command:
+npm run start
+
+Build/output directory:
+build
+
+Node.js:
+20 LTS или 18 LTS
+
+Важно:
+- npm start теперь запускает production-сервер serve.
+- Для локальной разработки используйте npm run dev.
+- Приложение слушает 0.0.0.0:$PORT.

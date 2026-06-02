@@ -1,0 +1,174 @@
+* {
+  box-sizing: border-box;
+}
+/* v3: исправленная турнирная сетка и плотные LAN-блоки */
+.bracket-card-fix { transform: translateZ(0); }
+
+/* Убираем почти все агрессивные hover-подсветки и прыжки карточек */
+button:hover,
+a:hover,
+article:hover,
+.hover\:-translate-y-1:hover,
+.hover\:scale-110:hover,
+.hover\:brightness-110:hover {
+  transform: none !important;
+  filter: none !important;
+}
+
+article:hover,
+button:hover,
+a:hover {
+  box-shadow: none !important;
+}
+
+/* v14: убрать навязчивые hover-эффекты по всему сайту */
+*:hover {
+  transform: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+button:hover,
+a:hover,
+article:hover,
+.card:hover,
+[class*="hover:"]:hover {
+  transform: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+[class*="hover\\:"]:hover,
+.hover\:-translate-y-1:hover,
+.hover\:scale-105:hover,
+.hover\:scale-110:hover,
+.hover\:brightness-110:hover,
+.hover\:shadow:hover,
+.hover\:shadow-lg:hover,
+.hover\:shadow-xl:hover {
+  transform: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+/* баннеры команд: без декоративных белых конусов/псевдоэлементов */
+.team-card::before,
+.team-card::after,
+[class*="team-banner"]::before,
+[class*="team-banner"]::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* v15: слайдер полностью удалён. Никаких стрелок, точек, смены слайдов и hover-подсветок. */
+button,
+a,
+article,
+.card,
+[class*="transition"] {
+  transition: none !important;
+}
+
+[class*="hover:"]:hover,
+[class*="hover\\:"]:hover {
+  transform: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* v16: компактный hero-слайдер вместо надписи LAN SEASON */
+.hero-mini-slider {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-mini-slider::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 12% 20%, rgba(103, 232, 249, 0.18), transparent 30%),
+    radial-gradient(circle at 86% 16%, rgba(217, 70, 239, 0.16), transparent 28%),
+    linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(168, 85, 247, 0.08));
+}
+
+.hero-mini-slider button {
+  cursor: pointer;
+  transition: width 0.25s ease, background 0.25s ease !important;
+}
+
+.hero-slider-progress {
+  width: 100%;
+  animation: hero-slider-progress 4.8s linear forwards;
+}
+
+@keyframes hero-slider-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* v17: стрелки hero-слайдера */
+.hero-slider-arrow {
+  cursor: pointer;
+  transition: none !important;
+}
+.hero-slider-arrow:hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border-color: rgba(255, 255, 255, 0.30) !important;
+  box-shadow: none !important;
+}
+.hero-slider-arrow svg {
+  pointer-events: none;
+}
+
+
+/* static-fix: стрелки, лого и блоки услуг полностью статичные */
+.hero-slider-arrow,
+.hero-slider-arrow:hover,
+.hero-slider-arrow:focus,
+.hero-slider-arrow:active {
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 56px !important;
+  height: 56px !important;
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.30) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transition: none !important;
+}
+
+.hero-slider-arrow-left { left: 32px !important; }
+.hero-slider-arrow-right { right: 32px !important; }
+.hero-slider-arrow svg { color: #fff !important; stroke: #fff !important; }
+
+header button,
+header button:hover,
+header button:focus,
+header button:active,
+header button span,
+header button span:hover {
+  transform: none !important;
+  transition: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+/* Услуги: карточки и вложенные элементы не меняются при наведении */
+section article:hover,
+section div:hover,
+section button:hover,
+section a:hover,
+.services-card:hover,
+[class*="Service"]:hover {
+  transform: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
