@@ -1,0 +1,68 @@
+VSKturn: настоящая отправка писем
+
+Что уже сделано:
+1. Серверная часть теперь отправляет настоящие письма через SMTP.
+2. Используется пакет nodemailer.
+3. При создании команды письма уходят на email приглашённых игроков.
+4. При дополнительном приглашении из личного кабинета письма также уходят на email.
+5. При подаче заявки пользователь получает письмо на свою почту.
+6. Администратор получает копию уведомления на nolove.vanlav@mail.ru.
+7. При обращении через форму контактов пользователь получает письмо-подтверждение.
+
+Как настроить Mail.ru:
+1. Зайди в почту nolove.vanlav@mail.ru.
+2. Открой настройки безопасности Mail.ru.
+3. Создай пароль для внешнего приложения.
+4. Скопируй созданный пароль. НОВЫЙ_ПАРОЛЬ_ВНЕШНЕГО_ПРИЛОЖЕНИЯ
+5. В папке backend создай файл .env по образцу .env.example.
+6. Вставь пароль в строку SMTP_PASS.
+
+Пример backend/.env:
+PORT=5000
+CLIENT_ORIGIN=http://localhost:3000
+ADMIN_EMAIL=nolove.vanlav@mail.ru
+SMTP_HOST=smtp.mail.ru
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=nolove.vanlav@mail.ru
+SMTP_PASS=тут_пароль_внешнего_приложения
+MAIL_FROM=VSKturn <nolove.vanlav@mail.ru>
+
+Запуск локально:
+1. Открой терминал в папке backend.
+2. Выполни команды:
+   npm install
+   npm start
+3. Сервер запустится на http://localhost:5000
+4. Проверка SMTP:
+   http://localhost:5000/api/mail/diagnose
+
+Запуск фронтенда:
+1. В корневой папке проекта создай файл .env.
+2. Вставь:
+   REACT_APP_API_URL=http://localhost:5000
+   REACT_APP_INVITE_API_URL=http://localhost:5000/api/invite
+3. Выполни:
+   npm install
+   npm start
+
+Важно для Timeweb Cloud:
+1. В панели Timeweb нужно добавить переменные окружения для backend:
+   PORT
+   CLIENT_ORIGIN
+   ADMIN_EMAIL
+   SMTP_HOST
+   SMTP_PORT
+   SMTP_SECURE
+   SMTP_USER
+   SMTP_PASS
+   MAIL_FROM
+2. CLIENT_ORIGIN должен быть адресом твоего сайта, например:
+   https://nolove52-diplom-c013.twc1.net
+3. На фронтенде REACT_APP_API_URL должен указывать на адрес backend API.
+
+Если письмо не пришло:
+1. Проверь папку Спам.
+2. Открой http://localhost:5000/api/mail/diagnose.
+3. Убедись, что SMTP_PASS это пароль внешнего приложения, а не обычный пароль от почты.
+4. Убедись, что backend запущен.

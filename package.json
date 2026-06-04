@@ -1,8 +1,9 @@
 {
   "scripts": {
-    "start": "serve -s build -l tcp://0.0.0.0:$PORT",
+    "start": "react-scripts start",
+    "dev": "react-scripts start",
     "build": "react-scripts build",
-    "dev": "react-scripts start"
+    "serve": "serve -s build -l tcp://0.0.0.0:$PORT"
   },
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
@@ -30,5 +31,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "proxy": "http://localhost:5000"
 }

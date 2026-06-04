@@ -5,6 +5,17 @@ import { DEFAULT_TOURNAMENTS } from "./data/defaultTournaments";
 import { DEFAULT_TEAMS } from "./data/defaultTeams";
 import { loadFromStorage, parseEmails } from "./utils/storage";
 import { sendEmail } from "./utils/emailApi";
+import { sendTeamInvite } from "./utils/sendTeamInvite";
+import {
+  loginUser,
+  registerUser,
+  saveApplication,
+  saveContact,
+  saveTeam,
+  saveTournament,
+  updateApplicationStatus,
+  updateTeam,
+} from "./utils/api";
 
 import Header from "./components/Header";
 import DashboardPage from "./components/DashboardPage";
@@ -111,19 +122,103 @@ function App() {
     navigateTo("dashboard");
   }
 
-  function handleLogin(userData) {
-    const email = userData.email.trim().toLowerCase();
+  function getLocalUsers() {
+    try {
+      return JSON.parse(localStorage.getItem("vskturnUsers") || "[]");
+    } catch {
+      return [];
+    }
+  }
 
-    const newUser = {
-      name: userData.name.trim(),
-      email,
-      role: email === "admin@vskturn.ru" ? "admin" : "user",
-    };
+  function saveLocalUsers(nextUsers) {
+    localStorage.setItem("vskturnUsers", JSON.stringify(nextUsers));
+  }
 
+  function finishAuth(newUser, message) {
     localStorage.setItem("vskturnUser", JSON.stringify(newUser));
     setUser(newUser);
     setIsLoginOpen(false);
-    showToast("Вы успешно вошли в аккаунт");
+    showToast(message);
+  }
+
+  async function handleLogin(userData) {
+    const email = userData.email.trim().toLowerCase();
+    const password = userData.password || "";
+
+    if (userData.mode === "register") {
+      const name = String(userData.name || "").trim();
+      const confirmPassword = userData.confirmPassword || "";
+
+      if (name.length < 2) {
+        return { ok: false, message: "Введите имя не короче 2 символов" };
+      }
+
+      if (password.length < 4) {
+        return { ok: false, message: "Пароль должен содержать минимум 4 символа" };
+      }
+
+      if (password !== confirmPassword) {
+        return { ok: false, message: "Пароли не совпадают" };
+      }
+
+      try {
+        const result = await registerUser({
+          name,
+          email,
+          password,
+          confirmPassword,
+        });
+
+        finishAuth(result.user, "Аккаунт создан, данные сохранены на сервере");
+        return { ok: true };
+      } catch (error) {
+        const localUsers = getLocalUsers();
+
+        if (localUsers.some((item) => item.email === email)) {
+          return { ok: false, message: "Пользователь с таким email уже существует" };
+        }
+
+        const localUser = {
+          id: Date.now(),
+          name,
+          email,
+          password,
+          role: email === "admin@vskturn.ru" ? "admin" : "user",
+          createdAt: new Date().toLocaleString("ru-RU"),
+        };
+
+        saveLocalUsers([localUser, ...localUsers]);
+        const { password: _password, ...publicUser } = localUser;
+        finishAuth(publicUser, "Аккаунт создан локально. Для сохранения на сервере запустите backend");
+        return { ok: true };
+      }
+    }
+
+    try {
+      const result = await loginUser({ email, password });
+      finishAuth(result.user, "Вы успешно вошли в аккаунт");
+      return { ok: true };
+    } catch (error) {
+      if (email === "admin@vskturn.ru" && password === "admin") {
+        finishAuth(
+          { id: "admin", name: "Администратор", email, role: "admin" },
+          "Вы вошли как администратор"
+        );
+        return { ok: true };
+      }
+
+      const localUser = getLocalUsers().find(
+        (item) => item.email === email && item.password === password
+      );
+
+      if (localUser) {
+        const { password: _password, ...publicUser } = localUser;
+        finishAuth(publicUser, "Вы успешно вошли в аккаунт");
+        return { ok: true };
+      }
+
+      return { ok: false, message: error.message || "Неверный email или пароль" };
+    }
   }
 
   function handleLogout() {
@@ -184,23 +279,38 @@ function App() {
       ],
     });
 
-    setApplications((prev) => [...prev, { ...newApplication, emailStatus: "Письмо отправлено" }]);
+    const savedApplication = { ...newApplication, emailStatus: "Письмо отправлено" };
+
+    try {
+      await saveApplication(savedApplication);
+      setApplications((prev) => [...prev, savedApplication]);
+      showToast("Заявка отправлена и сохранена на сервере");
+    } catch (error) {
+      setApplications((prev) => [...prev, { ...savedApplication, serverStatus: "Не сохранено на сервере" }]);
+      showToast("Заявка сохранена локально, сервер временно недоступен");
+    }
+
     setSelectedTournament(null);
-    showToast("Заявка отправлена, письмо пришло на вашу почту");
   }
 
-  function handleContactSubmit(contactData) {
+  async function handleContactSubmit(contactData) {
     const newContact = {
       id: Date.now(),
       createdAt: new Date().toLocaleString("ru-RU"),
       ...contactData,
     };
 
-    setContacts((prev) => [newContact, ...prev]);
-    showToast("Сообщение успешно отправлено");
+    try {
+      await saveContact(newContact);
+      setContacts((prev) => [newContact, ...prev]);
+      showToast("Сообщение отправлено и сохранено на сервере");
+    } catch (error) {
+      setContacts((prev) => [newContact, ...prev]);
+      showToast("Сообщение сохранено локально, сервер временно недоступен");
+    }
   }
 
-  function handleCreateTeam(teamData) {
+  async function handleCreateTeam(teamData) {
     if (!user) {
       setIsLoginOpen(true);
       showToast("Сначала войдите в аккаунт");
@@ -231,37 +341,90 @@ function App() {
       invitedEmails: [...new Set(invitedEmails)],
     };
 
-    setTeams((prev) => [newTeam, ...prev]);
-    showToast("Команда создана, приглашения добавлены");
+    try {
+      await saveTeam(newTeam);
+      setTeams((prev) => [newTeam, ...prev]);
+
+      if (invitedEmails.length > 0) {
+        const results = await Promise.allSettled(
+          invitedEmails.map((email) =>
+            sendTeamInvite({
+              recipientEmail: email,
+              teamName: newTeam.name,
+              captainName: user.name,
+              game: newTeam.game,
+            })
+          )
+        );
+        const failed = results.find((item) => item.status === "rejected");
+        if (failed) {
+          showToast(`Команда создана, приглашения сохранены, но письмо не ушло: ${failed.reason?.message || "проверьте SMTP"}`);
+        } else {
+          showToast("Команда создана, приглашения реально отправлены на email");
+        }
+      } else {
+        showToast("Команда создана и сохранена на сервере");
+      }
+    } catch (error) {
+      setTeams((prev) => [newTeam, ...prev]);
+      showToast(error.message || "Команда создана, но письмо не отправилось. Проверьте SMTP сервер");
+    }
   }
 
-  function handleInviteToTeam(teamId, emailsText) {
+  async function handleInviteToTeam(teamId, emailsText) {
     if (!user) return;
 
     const newEmails = parseEmails(emailsText);
+    const currentTeam = teams.find((team) => team.id === teamId && team.captainEmail === user.email);
 
-    setTeams((prev) =>
-      prev.map((team) => {
-        if (team.id !== teamId || team.captainEmail !== user.email) {
-          return team;
-        }
+    if (!currentTeam) {
+      showToast("Команда не найдена или вы не капитан");
+      return;
+    }
 
-        const memberEmails = team.members.map((member) => member.email);
-        const filteredEmails = newEmails.filter(
-          (email) =>
-            email !== user.email &&
-            !memberEmails.includes(email) &&
-            !team.invitedEmails.includes(email)
-        );
-
-        return {
-          ...team,
-          invitedEmails: [...team.invitedEmails, ...filteredEmails],
-        };
-      })
+    const memberEmails = currentTeam.members.map((member) => member.email);
+    const filteredEmails = newEmails.filter(
+      (email) =>
+        email !== user.email &&
+        !memberEmails.includes(email) &&
+        !currentTeam.invitedEmails.includes(email)
     );
 
-    showToast("Приглашения отправлены");
+    if (filteredEmails.length === 0) {
+      showToast("Нет новых email для приглашения");
+      return;
+    }
+
+    const updatedTeam = {
+      ...currentTeam,
+      invitedEmails: [...currentTeam.invitedEmails, ...filteredEmails],
+    };
+
+    try {
+      await updateTeam(updatedTeam);
+      setTeams((prev) => prev.map((team) => (team.id === teamId ? updatedTeam : team)));
+
+      const results = await Promise.allSettled(
+        filteredEmails.map((email) =>
+          sendTeamInvite({
+            recipientEmail: email,
+            teamName: currentTeam.name,
+            captainName: user.name,
+            game: currentTeam.game,
+          })
+        )
+      );
+
+      const failed = results.find((item) => item.status === "rejected");
+      if (failed) {
+        showToast(`Приглашение сохранено в кабинете, но письмо не ушло: ${failed.reason?.message || "проверьте SMTP"}`);
+      } else {
+        showToast("Настоящие приглашения отправлены на email");
+      }
+    } catch (error) {
+      setTeams((prev) => prev.map((team) => (team.id === teamId ? updatedTeam : team)));
+      showToast(error.message || "Приглашение сохранено локально, но сервер временно недоступен");
+    }
   }
 
   function handleAcceptTeamInvite(teamId) {
@@ -325,7 +488,7 @@ function App() {
     showToast("Команда удалена");
   }
 
-  function handleAddTournament(tournamentData) {
+  async function handleAddTournament(tournamentData) {
     const sampleTeams = [
       "Team Alpha",
       "Team Bravo",
@@ -346,8 +509,14 @@ function App() {
       ...tournamentData,
     };
 
-    setTournaments((prev) => [newTournament, ...prev]);
-    showToast("Турнир добавлен");
+    try {
+      await saveTournament(newTournament);
+      setTournaments((prev) => [newTournament, ...prev]);
+      showToast("Турнир добавлен и сохранён на сервере");
+    } catch (error) {
+      setTournaments((prev) => [newTournament, ...prev]);
+      showToast("Турнир добавлен локально, сервер временно недоступен");
+    }
   }
 
   function handleDeleteTournament(tournamentId) {
@@ -362,7 +531,7 @@ function App() {
     showToast("Турнир удалён");
   }
 
-  function handleUpdateApplicationStatus(applicationId, newStatus) {
+  async function handleUpdateApplicationStatus(applicationId, newStatus) {
     setApplications((prev) =>
       prev.map((application) =>
         application.id === applicationId
@@ -371,7 +540,12 @@ function App() {
       )
     );
 
-    showToast(`Статус заявки изменён: ${newStatus}`);
+    try {
+      await updateApplicationStatus(applicationId, newStatus);
+      showToast(`Статус заявки изменён и сохранён на сервере: ${newStatus}`);
+    } catch (error) {
+      showToast(`Статус изменён локально: ${newStatus}`);
+    }
   }
 
   function handleDeleteApplication(applicationId) {

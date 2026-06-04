@@ -1,0 +1,31 @@
+{
+  "users": [],
+  "teams": [
+    {
+      "id": 1780555878722,
+      "name": "nolove52",
+      "game": "Dota 2",
+      "description": "",
+      "captainName": "Георгий",
+      "captainEmail": "ancudmi@mail.ru",
+      "createdAt": "04.06.2026, 16:51:18",
+      "bannerId": 3,
+      "members": [
+        {
+          "name": "Георгий",
+          "email": "ancudmi@mail.ru",
+          "role": "Капитан",
+          "status": "Участник"
+        }
+      ],
+      "invitedEmails": [
+        "gosha.gosha.kil@mail.ru",
+        "nolove.vanlav@mail.ru"
+      ]
+    }
+  ],
+  "applications": [],
+  "contacts": [],
+  "tournaments": [],
+  "emails": []
+}

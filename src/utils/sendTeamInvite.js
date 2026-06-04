@@ -1,4 +1,4 @@
-const INVITE_API_URL = process.env.REACT_APP_INVITE_API_URL || "http://localhost:5000/api/invite";
+const INVITE_API_URL = process.env.REACT_APP_INVITE_API_URL || "/api/invite";
 
 export async function sendTeamInvite({ recipientEmail, teamName, captainName, game }) {
   const response = await fetch(INVITE_API_URL, {
